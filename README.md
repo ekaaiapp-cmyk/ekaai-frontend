@@ -2,6 +2,29 @@
 
 A modern React TypeScript landing page for EkaAI - an adaptive AI tutor that understands your unique learning style.
 
+## 🚀 Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The app will be available at http://localhost:5173
+
+## 🔧 Environment Variables
+
+Create a `.env.local` file:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+For production, update with your deployed backend URL:
+
+```bash
+VITE_API_BASE_URL=https://your-backend-domain.com
+```
+
 ## 🎯 Overview
 
 EkaAI is designed to revolutionize education by providing personalized learning experiences for students and powerful insights for educators. This landing page showcases the platform's features and allows visitors to join the waitlist.

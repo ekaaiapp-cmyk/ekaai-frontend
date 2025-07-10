@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { waitlistAPI } from '../../services/waitlistAPI';
 
 interface UniversityFormData {
   firstName: string;
@@ -115,13 +116,14 @@ const UniversityForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // TODO: Replace with actual API call when backend is ready
-      console.log('University registration data:', formData);
+      const result = await waitlistAPI.registerUniversity(formData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setIsSubmitted(true);
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        console.error('Registration failed:', result.message);
+        // Handle error (show error message)
+      }
     } catch (error) {
       console.error('Registration failed:', error);
       // Handle error (show error message)
