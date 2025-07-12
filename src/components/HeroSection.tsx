@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const HeroSection: React.FC = () => {
   const scrollToWaitlist = () => {
     document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
@@ -16,12 +18,20 @@ const HeroSection: React.FC = () => {
             EkaAI is an adaptive AI tutor that understands your unique learning style, 
             helping you master any subject faster and more effectively.
           </p>
-          <button
-            onClick={scrollToWaitlist}
-            className="bg-primary-accent text-primary-bg px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-          >
-            Join the Waitlist
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/doubt-clearing"
+              className="bg-primary-accent text-primary-bg px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              Try Doubt Clearing
+            </Link>
+            <button
+              onClick={scrollToWaitlist}
+              className="bg-transparent border-2 border-primary-accent text-primary-accent px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-accent hover:text-primary-bg transition-all duration-200 transform hover:scale-105"
+            >
+              Join the Waitlist
+            </button>
+          </div>
         </div>
         
         {/* Decorative elements */}

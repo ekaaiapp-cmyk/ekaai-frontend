@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const StudentSection: React.FC = () => {
   const features = [
     {
@@ -25,7 +27,9 @@ const StudentSection: React.FC = () => {
         </svg>
       ),
       title: "24/7 Instant Doubt Clearing",
-      description: "Never wait for an answer again. Get your questions solved the moment they arise, anytime."
+      description: "Never wait for an answer again. Get your questions solved the moment they arise, anytime.",
+      link: "/doubt-clearing",
+      linkText: "Try it now"
     },
     {
       icon: (
@@ -72,9 +76,20 @@ const StudentSection: React.FC = () => {
               <h3 className="text-xl font-headline font-semibold text-primary-text-bright mb-4">
                 {feature.title}
               </h3>
-              <p className="text-primary-text leading-relaxed">
+              <p className="text-primary-text leading-relaxed mb-4">
                 {feature.description}
               </p>
+              {feature.link && (
+                <Link
+                  to={feature.link}
+                  className="inline-flex items-center text-primary-accent hover:text-yellow-500 transition-colors duration-200 font-medium"
+                >
+                  {feature.linkText}
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              )}
             </div>
           ))}
         </div>

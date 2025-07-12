@@ -9,12 +9,28 @@ const Header: React.FC = () => {
             EkaAI
           </Link>
         </div>
-        <Link
-          to="/waitlist"
-          className="bg-primary-accent text-primary-bg px-6 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200"
-        >
-          Join Waitlist
-        </Link>
+        <nav className="hidden md:flex items-center space-x-6">
+          <Link
+            to="/doubt-clearing"
+            className="text-primary-text hover:text-primary-accent transition-colors duration-200"
+          >
+            Doubt Clearing
+          </Link>
+          <Link
+            to="/waitlist"
+            className="bg-primary-accent text-primary-bg px-6 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200"
+          >
+            Join Waitlist
+          </Link>
+        </nav>
+        <div className="md:hidden">
+          <Link
+            to="/waitlist"
+            className="bg-primary-accent text-primary-bg px-6 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors duration-200"
+          >
+            Join Waitlist
+          </Link>
+        </div>
       </div>
     </header>
   );

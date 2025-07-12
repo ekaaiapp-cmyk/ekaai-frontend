@@ -5,6 +5,7 @@ import StudentSection from './components/StudentSection';
 import EducatorSection from './components/EducatorSection';
 import FinalCTA from './components/FinalCTA';
 import WaitlistPage from './components/WaitlistPage';
+import DoubtClearingPage from './components/DoubtClearingPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             </>
           } />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/doubt-clearing" element={<DoubtClearingPage />} />
         </Routes>
       </div>
     </Router>
