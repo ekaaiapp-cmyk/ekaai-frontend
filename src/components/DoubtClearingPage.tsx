@@ -4,11 +4,25 @@ import { doubtClearingAPI } from '../services/doubtClearingAPI';
 import type { ChatMessage } from '../services/doubtClearingAPI';
 
 const DoubtClearingPage: React.FC = () => {
-  // Header visibility state for auto-hide
+  // State declarations
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      content: "Hi! I'm your AI tutor. I'm here to help you with any academic questions you have. What would you like to learn about today?",
+      sender: 'ai',
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
-  // Use number for timeout ref in browser (window.setTimeout returns number)
-  const hideTimeoutRef = useRef<number | null>(null);
 
+  // Refs
+  const hideTimeoutRef = useRef<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Header visibility effect
   useEffect(() => {
     const showHeader = () => {
       setHeaderVisible(true);
@@ -27,18 +41,23 @@ const DoubtClearingPage: React.FC = () => {
     };
   }, []);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      text: "Hi! I'm your AI tutor. I'm here to help you with any academic questions you have. What would you like to learn about today?",
-      sender: 'ai',
-      timestamp: new Date()
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Load chat history when component mounts
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      try {
+        const history = await doubtClearingAPI.getChatHistory();
+        if (history.length > 0) {
+          setMessages(history);
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadChatHistory();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,8 +71,7 @@ const DoubtClearingPage: React.FC = () => {
     if (!inputMessage.trim()) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      text: inputMessage,
+      content: inputMessage,
       sender: 'user',
       timestamp: new Date()
     };
@@ -72,16 +90,18 @@ const DoubtClearingPage: React.FC = () => {
 
       if (response.success && response.data) {
         const aiResponse: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          text: response.data.response,
+          content: response.data.response,
           sender: 'ai',
           timestamp: new Date()
         };
-        setMessages(prev => [...prev, aiResponse]);
+        const updatedMessages = [...messages, userMessage, aiResponse];
+        setMessages(updatedMessages);
+
+        // Save the chat after each AI response
+        await doubtClearingAPI.saveChat(updatedMessages);
       } else {
         const errorResponse: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          text: "I apologize, but I'm having trouble processing your question right now. Please try again.",
+          content: "I apologize, but I'm having trouble processing your question right now. Please try again.",
           sender: 'ai',
           timestamp: new Date()
         };
@@ -90,8 +110,7 @@ const DoubtClearingPage: React.FC = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       const errorResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: "Sorry, I encountered an error. Please try again later.",
+        content: "Sorry, I encountered an error. Please try again later.",
         sender: 'ai',
         timestamp: new Date()
       };
@@ -151,59 +170,70 @@ const DoubtClearingPage: React.FC = () => {
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl p-4 rounded-2xl ${
-                  message.sender === 'user'
-                    ? 'bg-primary-accent text-primary-bg ml-4'
-                    : 'bg-gray-900/70 text-primary-text mr-4 border border-gray-800'
-                }`}
-              >
-                {message.sender === 'ai' && (
-                  <div className="flex items-center mb-2">
-                    <div className="w-8 h-8 bg-primary-accent/20 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-primary-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-8 h-8 border-4 border-primary-accent border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-primary-text">Loading chat history...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.timestamp.toString()}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl p-4 rounded-2xl ${
+                      message.sender === 'user'
+                        ? 'bg-primary-accent text-primary-bg ml-4'
+                        : 'bg-gray-900/70 text-primary-text mr-4 border border-gray-800'
+                    }`}
+                  >
+                    {message.sender === 'ai' && (
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 bg-primary-accent/20 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-4 h-4 text-primary-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-primary-accent">EkaAI Tutor</span>
+                      </div>
+                    )}
+                    <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                    <div className="mt-2 text-xs opacity-70">
+                      {formatTime(message.timestamp)}
                     </div>
-                    <span className="text-sm font-medium text-primary-accent">EkaAI Tutor</span>
                   </div>
-                )}
-                <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                  {message.text}
-                </p>
-                <div className="mt-2 text-xs opacity-70">
-                  {formatTime(message.timestamp)}
                 </div>
-              </div>
-            </div>
-          ))}
+              ))}
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="max-w-xs p-4 rounded-2xl bg-gray-900/70 border border-gray-800 mr-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-primary-accent/20 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-4 h-4 text-primary-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="max-w-xs p-4 rounded-2xl bg-gray-900/70 border border-gray-800 mr-4">
+                    <div className="flex items-center mb-2">
+                      <div className="w-8 h-8 bg-primary-accent/20 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-4 h-4 text-primary-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-primary-accent">EkaAI Tutor</span>
+                    </div>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-primary-accent">EkaAI Tutor</span>
                 </div>
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-primary-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            </div>
+              )}
+              <div ref={messagesEndRef} />
+            </>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
@@ -219,7 +249,7 @@ const DoubtClearingPage: React.FC = () => {
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything about your studies..."
                   className="w-full bg-gray-900/50 text-primary-text placeholder-gray-400 border border-gray-700 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-accent focus:border-transparent resize-none"
-                  disabled={isTyping}
+                  disabled={isTyping || isLoading}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
                   <button
