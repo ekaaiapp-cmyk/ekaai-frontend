@@ -140,6 +140,18 @@ const DoubtClearingPage: React.FC = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleClearChat = async () => {
+    try {
+      // Clear the stored chat history
+      await doubtClearingAPI.saveChat([messages[0]]);
+      // Reset UI state
+      setMessages([messages[0]]);
+      setFollowUpQuestions([]);
+    } catch (error) {
+      console.error('Failed to clear chat history:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-primary-bg text-primary-text font-body flex flex-col relative">
       {/* Fixed, auto-hide Header */}
@@ -319,7 +331,7 @@ const DoubtClearingPage: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => setMessages([messages[0]])}
+                onClick={handleClearChat}
                 className="text-xs text-gray-400 hover:text-primary-accent transition-colors duration-200"
               >
                 Clear Chat
