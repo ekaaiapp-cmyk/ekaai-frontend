@@ -16,6 +16,7 @@ const DoubtClearingPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
 
   // Refs
   const hideTimeoutRef = useRef<number | null>(null);
@@ -76,10 +77,13 @@ const DoubtClearingPage: React.FC = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
     const currentMessage = inputMessage;
     setInputMessage('');
     setIsTyping(true);
+    
+    // Update messages optimistically
+    const optimisticUpdate = [...messages, userMessage];
+    setMessages(optimisticUpdate);
 
     try {
       const response = await doubtClearingAPI.sendMessage(currentMessage, {
@@ -92,13 +96,16 @@ const DoubtClearingPage: React.FC = () => {
         const aiResponse: ChatMessage = {
           content: response.data.response,
           sender: 'ai',
-          timestamp: new Date()
+          timestamp: new Date(),
+          followUpQuestions: response.data.followUpQuestions,
+          relatedTopics: response.data.relatedTopics
         };
-        const updatedMessages = [...messages, userMessage, aiResponse];
-        setMessages(updatedMessages);
+        
+        setMessages(prev => [...prev, aiResponse]);
+        setFollowUpQuestions(response.data.followUpQuestions || []);
 
         // Save the chat after each AI response
-        await doubtClearingAPI.saveChat(updatedMessages);
+        await doubtClearingAPI.saveChat([...optimisticUpdate, aiResponse]);
       } else {
         const errorResponse: ChatMessage = {
           content: "I apologize, but I'm having trouble processing your question right now. Please try again.",
@@ -106,6 +113,7 @@ const DoubtClearingPage: React.FC = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev, errorResponse]);
+        setFollowUpQuestions([]); // Clear follow-up questions on error
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -115,6 +123,7 @@ const DoubtClearingPage: React.FC = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorResponse]);
+      setFollowUpQuestions([]); // Clear follow-up questions on error
     } finally {
       setIsTyping(false);
     }
@@ -132,7 +141,7 @@ const DoubtClearingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary-bg text-primary-text font-body flex flex-col">
+    <div className="min-h-screen bg-primary-bg text-primary-text font-body flex flex-col relative">
       {/* Fixed, auto-hide Header */}
       <header
         className={`fixed top-0 left-0 w-full z-30 transition-transform duration-300 ease-in-out ${
@@ -167,9 +176,9 @@ const DoubtClearingPage: React.FC = () => {
       <div className="h-20" />
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-hidden">
+        {/* Messages Container with padding for fixed elements */}
+        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 pb-[240px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center space-y-4">
@@ -237,82 +246,85 @@ const DoubtClearingPage: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-800 bg-primary-bg/90 backdrop-blur-sm px-6 py-4">
-          <div className="flex items-end space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask me anything about your studies..."
-                  className="w-full bg-gray-900/50 text-primary-text placeholder-gray-400 border border-gray-700 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-accent focus:border-transparent resize-none"
-                  disabled={isTyping || isLoading}
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
-                    className="w-8 h-8 bg-primary-accent text-primary-bg rounded-lg flex items-center justify-center hover:bg-yellow-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </button>
+        <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-primary-bg/95 backdrop-blur-sm z-20">
+          <div className="max-w-4xl mx-auto px-6 py-3">
+            {/* Quick Action Buttons */}
+            <div className="mb-3">
+              <p className="text-xs text-gray-400 mb-2">Suggested questions:</p>
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {followUpQuestions.length > 0 ? (
+                  followUpQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setInputMessage(question)}
+                      className="px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-primary-text rounded-full border border-gray-700/50 transition-colors duration-200 text-xs leading-none"
+                    >
+                      {question}
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setInputMessage("Can you explain [concept/topic] in simpler terms?")}
+                      className="px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-primary-text rounded-full border border-gray-700/50 transition-colors duration-200 text-xs leading-none"
+                    >
+                      Can you explain [concept/topic] in simpler terms?
+                    </button>
+                    <button
+                      onClick={() => setInputMessage("Can you provide an example of [concept] in action?")}
+                      className="px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-primary-text rounded-full border border-gray-700/50 transition-colors duration-200 text-xs leading-none"
+                    >
+                      Can you provide an example of [concept] in action?
+                    </button>
+                    <button
+                      onClick={() => setInputMessage("Where can I find more resources on [topic]?")}
+                      className="px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-primary-text rounded-full border border-gray-700/50 transition-colors duration-200 text-xs leading-none"
+                    >
+                      Where can I find more resources on [topic]?
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="relative mb-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask me anything about your studies..."
+                className="w-full bg-gray-900/50 text-primary-text placeholder-gray-400 border border-gray-700 rounded-lg px-4 py-2.5 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-accent focus:border-transparent resize-none"
+                disabled={isTyping || isLoading}
+              />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isTyping}
+                  className="w-7 h-7 bg-primary-accent text-primary-bg rounded-md flex items-center justify-center hover:bg-yellow-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 text-xs text-gray-400">
+                <span>Press Enter to send</span>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span>AI Ready</span>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center space-x-4 text-sm text-gray-400">
-              <span>Press Enter to send</span>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>AI Ready</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
               <button
                 onClick={() => setMessages([messages[0]])}
-                className="text-sm text-gray-400 hover:text-primary-accent transition-colors duration-200"
+                className="text-xs text-gray-400 hover:text-primary-accent transition-colors duration-200"
               >
                 Clear Chat
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Action Buttons */}
-      <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/30">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setInputMessage("Can you explain this concept in simpler terms?")}
-              className="px-4 py-2 bg-gray-800 text-primary-text rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
-            >
-              Explain in simple terms
-            </button>
-            <button
-              onClick={() => setInputMessage("Can you give me an example?")}
-              className="px-4 py-2 bg-gray-800 text-primary-text rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
-            >
-              Give me an example
-            </button>
-            <button
-              onClick={() => setInputMessage("What are the key points I should remember?")}
-              className="px-4 py-2 bg-gray-800 text-primary-text rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
-            >
-              Key points
-            </button>
-            <button
-              onClick={() => setInputMessage("Can you create a practice question for me?")}
-              className="px-4 py-2 bg-gray-800 text-primary-text rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
-            >
-              Practice question
-            </button>
           </div>
         </div>
       </div>

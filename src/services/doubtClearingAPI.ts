@@ -2,8 +2,21 @@
 
 export interface ChatMessage {
   content: string;
-  timestamp: Date;
   sender: 'user' | 'ai';
+  timestamp: Date;
+  followUpQuestions?: string[];
+  relatedTopics?: string[];
+  summary?: string;
+}
+
+export interface APIResponse {
+  success: boolean;
+  data?: {
+    response: string;
+    followUpQuestions?: string[];
+    relatedTopics?: string[];
+    summary?: string;
+  };
 }
 
 export interface ChatContext {
