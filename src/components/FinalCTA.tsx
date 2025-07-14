@@ -59,7 +59,7 @@ const FinalCTA: React.FC = () => {
           </div>
 
           {/* Trust indicators */}
-          <div className="mt-16 pt-8 border-t border-gray-800">
+          {/* <div className="mt-16 pt-8 border-t border-gray-800">
             <p className="text-sm text-gray-400 mb-4">Trusted by educators and students worldwide</p>
             <div className="flex justify-center items-center space-x-8 opacity-60">
               <div className="text-2xl font-bold">500+</div>
@@ -71,7 +71,7 @@ const FinalCTA: React.FC = () => {
               <div className="text-2xl font-bold">10+</div>
               <div className="text-sm">Universities</div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>
