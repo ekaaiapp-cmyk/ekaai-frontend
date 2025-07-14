@@ -2,7 +2,7 @@
 
 export interface ChatMessage {
   content: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'assistant';
   timestamp: Date;
   followUpQuestions?: string[];
   relatedTopics?: string[];

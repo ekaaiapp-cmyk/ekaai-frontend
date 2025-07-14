@@ -8,7 +8,7 @@ const DoubtClearingPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       content: "Hi! I'm your AI tutor. I'm here to help you with any academic questions you have. What would you like to learn about today?",
-      sender: 'ai',
+      sender: 'assistant',
       timestamp: new Date()
     }
   ]);
@@ -95,7 +95,7 @@ const DoubtClearingPage: React.FC = () => {
       if (response.success && response.data) {
         const aiResponse: ChatMessage = {
           content: response.data.response,
-          sender: 'ai',
+          sender: 'assistant',
           timestamp: new Date(),
           followUpQuestions: response.data.followUpQuestions,
           relatedTopics: response.data.relatedTopics
@@ -109,7 +109,7 @@ const DoubtClearingPage: React.FC = () => {
       } else {
         const errorResponse: ChatMessage = {
           content: "I apologize, but I'm having trouble processing your question right now. Please try again.",
-          sender: 'ai',
+          sender: 'assistant',
           timestamp: new Date()
         };
         setMessages(prev => [...prev, errorResponse]);
@@ -119,7 +119,7 @@ const DoubtClearingPage: React.FC = () => {
       console.error('Error sending message:', error);
       const errorResponse: ChatMessage = {
         content: "Sorry, I encountered an error. Please try again later.",
-        sender: 'ai',
+        sender: 'assistant',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorResponse]);
@@ -212,7 +212,7 @@ const DoubtClearingPage: React.FC = () => {
                         : 'bg-gray-900/70 text-primary-text mr-4 border border-gray-800'
                     }`}
                   >
-                    {message.sender === 'ai' && (
+                    {message.sender === 'assistant' && (
                       <div className="flex items-center mb-2">
                         <div className="w-8 h-8 bg-primary-accent/20 rounded-full flex items-center justify-center mr-3">
                           <svg className="w-4 h-4 text-primary-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
