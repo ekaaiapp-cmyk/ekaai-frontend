@@ -1,6 +1,6 @@
 # EkaAI Frontend
 
-A modern React TypeScript landing page for EkaAI - an adaptive AI tutor that understands your unique learning style.
+A modern React TypeScript application for EkaAI - an adaptive AI tutor that revolutionizes education through personalized learning experiences. This comprehensive platform includes a landing page, doubt clearing system, and multi-role waitlist registration.
 
 ## 🚀 Quick Start
 
@@ -34,9 +34,13 @@ EkaAI is designed to revolutionize education by providing personalized learning 
 - **Modern Design**: Dark theme with yellow accents following the masterplan specifications
 - **Responsive Layout**: Mobile-first design that works on all devices
 - **Interactive Components**: Smooth scrolling, hover effects, and form handling
+- **Doubt Clearing System**: Real-time AI-powered chat interface for instant doubt resolution
 - **Waitlist System**: Multi-role registration for students, instructors, and universities
-- **Accessibility**: Proper semantic HTML and focus states
+- **Route-based Navigation**: Clean React Router DOM implementation with smooth transitions
+- **Accessibility**: Proper semantic HTML, focus states, and ARIA compliance
 - **Performance Optimized**: Built with Vite for fast development and production builds
+- **TypeScript Integration**: Full type safety with comprehensive interface definitions
+- **API-Ready Architecture**: Service layer prepared for backend integration
 
 ## 🛠️ Tech Stack
 
@@ -70,6 +74,7 @@ EkaAI is designed to revolutionize education by providing personalized learning 
 
 - `/` - Main landing page
 - `/waitlist` - Waitlist registration with user type selection
+- `/doubt-clearing` - AI-powered doubt clearing chat interface
 
 ### Available Scripts
 
@@ -101,12 +106,14 @@ src/
 │   ├── EducatorSection.tsx  # Educator features
 │   ├── FinalCTA.tsx         # Waitlist CTA with routing
 │   ├── WaitlistPage.tsx     # Main waitlist page
+│   ├── DoubtClearingPage.tsx # AI-powered doubt clearing chat
 │   └── forms/
 │       ├── StudentForm.tsx     # Student registration form
 │       ├── InstructorForm.tsx  # Instructor registration form
 │       └── UniversityForm.tsx  # University registration form
 ├── services/
-│   └── waitlistAPI.ts       # API service for form submissions
+│   ├── waitlistAPI.ts       # API service for form submissions
+│   └── doubtClearingAPI.ts  # API service for chat functionality
 ├── App.tsx                  # Main app with routing
 ├── main.tsx                # App entry point
 └── index.css               # Global styles with custom properties
@@ -119,16 +126,18 @@ src/
 #### Header
 - Fixed navigation with logo and waitlist CTA
 - React Router Link navigation to waitlist page
+- Doubt clearing link for instant AI support
 
 #### HeroSection
 - Main headline and value proposition
-- Call-to-action button
+- Call-to-action button for doubt clearing
 - Feature highlights with icons
 
 #### StudentSection
 - Student-focused features and benefits
 - Interactive cards with hover effects
 - Personalization emphasis
+- Link to doubt clearing functionality
 
 #### EducatorSection
 - Educator-focused features
@@ -139,6 +148,15 @@ src/
 - Primary call-to-action linking to waitlist
 - Trust indicators and benefits
 - Streamlined user journey
+
+### Doubt Clearing System
+
+#### DoubtClearingPage
+- Real-time AI chat interface
+- Persistent chat history
+- Follow-up question suggestions
+- Auto-hiding header for immersive experience
+- Responsive design for all devices
 
 ### Waitlist System Components
 
@@ -161,6 +179,33 @@ src/
 - Institutional information gathering
 - Infrastructure assessment
 - Implementation planning and budgeting
+
+## 📝 Doubt Clearing System
+
+The application features a comprehensive AI-powered doubt clearing system:
+
+### Architecture
+- **Real-time Chat Interface**: Interactive chat experience with AI tutor
+- **Message Persistence**: Chat history maintained across sessions
+- **Context Awareness**: AI remembers previous conversations for better responses
+- **Follow-up Questions**: Smart suggestions based on conversation context
+- **Responsive Design**: Optimized for all devices with touch-friendly interface
+
+### Technical Features
+- **TypeScript Integration**: Strongly typed message and response interfaces
+- **Service Layer**: Dedicated API service for chat functionality
+- **State Management**: React hooks for efficient chat state handling
+- **Auto-scroll**: Automatic scrolling to latest messages
+- **Loading States**: Visual feedback during AI response generation
+- **Error Handling**: Comprehensive error management with retry mechanisms
+
+### Backend Integration
+The frontend is prepared for REST API integration with endpoints:
+- `POST /api/doubt-clearing/submit` - Send message to AI
+- `POST /api/doubt-clearing/save-chat` - Save chat history
+- `GET /api/doubt-clearing/history` - Retrieve chat history
+
+Environment variable support: `VITE_API_BASE_URL`
 
 ## 📝 Waitlist System
 
@@ -221,6 +266,31 @@ Custom configuration in `tailwind.config.js` with:
 
 ### PostCSS
 Configured with Tailwind CSS and Autoprefixer for vendor prefix support.
+
+## 🏗️ Architecture & Design Patterns
+
+### Component Architecture
+- **Functional Components**: All components use React functional components with hooks
+- **TypeScript Integration**: Strong typing throughout with interfaces and type definitions
+- **Separation of Concerns**: Clear separation between UI components and business logic
+- **Reusable Components**: Modular design with reusable form and UI components
+
+### State Management
+- **React Hooks**: useState, useEffect, useRef for local component state
+- **Context-Aware Design**: Props drilling avoided through component composition
+- **Service Layer Pattern**: API calls abstracted into dedicated service modules
+
+### Code Organization
+- **SOLID Principles**: Single responsibility, open/closed, dependency inversion
+- **Clean Architecture**: Separation of concerns with clear boundaries
+- **Component Composition**: Favoring composition over inheritance
+- **TypeScript Best Practices**: Strong typing, interfaces, and type safety
+
+### Performance Optimization
+- **Lazy Loading**: Route-based code splitting with React Router
+- **Memoization**: Strategic use of React optimization techniques
+- **Asset Optimization**: Vite for fast builds and hot reloading
+- **Bundle Analysis**: Optimized bundle sizes for production
 
 ## 🚀 Deployment
 
