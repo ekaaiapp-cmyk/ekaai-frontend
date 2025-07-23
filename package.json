@@ -7,9 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup:db": "./setup-database.sh",
+    "setup:help": "echo '🚀 EkaAI Setup Commands:' && echo '  npm run setup:db  - Setup Supabase database schema' && echo '  npm run dev       - Start development server' && echo '  npm run build     - Build for production'"
   },
   "dependencies": {
+    "@supabase/auth-ui-react": "^0.4.7",
+    "@supabase/auth-ui-shared": "^0.1.8",
+    "@supabase/supabase-js": "^2.52.1",
     "@tailwindcss/vite": "^4.1.11",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
