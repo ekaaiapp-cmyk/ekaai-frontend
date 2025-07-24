@@ -12,6 +12,11 @@ import LoginScreen from './components/LoginScreen';
 import OnboardingForm from './components/OnboardingForm';
 import StudentDashboard from './components/StudentDashboard';
 import SettingsPage from './components/SettingsPage';
+import LearningSessionPage from './components/LearningSessionPage';
+import ProgressAnalyticsPage from './components/ProgressAnalyticsPage';
+import FlashcardsPage from './components/FlashcardsPage';
+import ContentLibraryPage from './components/ContentLibraryPage';
+import LearningSessionsPage from './components/LearningSessionsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -51,6 +56,41 @@ function App() {
             <Route path="/settings" element={
               <ProtectedRoute requireProfile={true}>
                 <SettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/learning-session/:id" element={
+              <ProtectedRoute requireProfile={true}>
+                <LearningSessionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/learning-session" element={
+              <ProtectedRoute requireProfile={true}>
+                <LearningSessionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/learning-sessions" element={
+              <ProtectedRoute requireProfile={true}>
+                <LearningSessionsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/progress" element={
+              <ProtectedRoute requireProfile={true}>
+                <ProgressAnalyticsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/flashcards" element={
+              <ProtectedRoute requireProfile={true}>
+                <FlashcardsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/content-library" element={
+              <ProtectedRoute requireProfile={true}>
+                <ContentLibraryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/doubt-clearing/:sessionId" element={
+              <ProtectedRoute requireProfile={true}>
+                <DoubtClearingPage />
               </ProtectedRoute>
             } />
             
