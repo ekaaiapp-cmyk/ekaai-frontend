@@ -11,9 +11,100 @@ This is a React TypeScript project built with Vite for the EkaAI platform. The p
 - **Styling**: Tailwind CSS v4+ with custom color configuration
 
 ## Project Structure
-- `/src/components/` - Reusable React components and page components
-- `/src/components/forms/` - Waitlist registration forms for different user types
+
+The project follows enterprise-grade architectural patterns with clear separation of concerns:
+
+- `/src/components/` - React components organized by type and purpose
+- `/src/components/ui/` - Reusable UI components (Button, Input, Card, etc.)
+- `/src/components/common/` - Layout components and shared patterns
+- `/src/components/forms/` - Form-specific components with both original and refactored versions
+- `/src/hooks/` - Custom React hooks for state management and logic
+- `/src/constants/` - Centralized application constants and data
+- `/src/utils/` - Utility functions for validation, formatting, etc.
 - `/src/services/` - API service layer for backend integration
+- Custom Tailwind configuration in `tailwind.config.ts`, Docs for v4.0 is available at [Tailwind CSS Documentation](https://tailwindcss.com/docs/*) - regex link
+- React Router DOM for client-side routing
+- Responsive design principles (mobile-first)
+- Clean, modern UI with subtle animations and hover effects
+
+## Architectural Principles
+
+### Component Architecture
+Always prefer composition over inheritance when building React components. Use the established UI component library for consistency:
+
+```typescript
+// Preferred: Use reusable UI components
+import { Button, Input, Card } from '../components/ui';
+
+const MyComponent: React.FC = () => (
+  <Card>
+    <Input label="Name" />
+    <Button>Submit</Button>
+  </Card>
+);
+
+// Avoid: Creating custom styled components for common elements
+const MyComponent: React.FC = () => (
+  <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
+    <input className="px-4 py-3 bg-gray-900/50..." />
+    <button className="bg-primary-accent text-primary-bg...">Submit</button>
+  </div>
+);
+```
+
+### State Management Patterns
+Use custom hooks for complex state logic and side effects:
+
+```typescript
+// Preferred: Custom hooks for reusable logic
+import { useForm } from '../hooks/useForm';
+import { useLoading } from '../hooks/useLoading';
+
+const FormComponent: React.FC = () => {
+  const { formData, errors, handleChange, handleSubmit } = useForm({...});
+  const { isLoading, executeAsync } = useLoading();
+  // Component logic
+};
+
+// Avoid: Inline state management in components
+const FormComponent: React.FC = () => {
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  // Repetitive form logic
+};
+```
+
+### Form Development Standards
+Use the centralized form system for all form-related components:
+
+```typescript
+import { useForm } from '../hooks/useForm';
+import { Button, Input, Select, CheckboxGroup } from '../components/ui';
+import { SUBJECT_OPTIONS, GRADE_OPTIONS } from '../constants';
+import type { FormField } from '../utils/formValidation';
+
+const MyForm: React.FC = () => {
+  const formFields: FormField[] = [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+    { name: 'grade', label: 'Grade', type: 'select', required: true }
+  ];
+
+  const { formData, errors, handleChange, handleSubmit } = useForm({
+    initialData: { name: '', grade: '' },
+    fields: formFields,
+    onSubmit: async (data) => { /* submit logic */ }
+  });
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <Input name="name" value={formData.name} onChange={handleChange} error={errors.name} />
+      <Select name="grade" value={formData.grade} onChange={handleChange} options={GRADE_OPTIONS} />
+      <Button type="submit">Submit</Button>
+    </form>
+  );
+};
+```
 - Custom Tailwind configuration in `tailwind.config.ts`, Docs for v4.0 is available at [Tailwind CSS Documentation](https://tailwindcss.com/docs/*) - regex link
 - React Router DOM for client-side routing
 - Responsive design principles (mobile-first)
@@ -83,51 +174,176 @@ This is a React TypeScript project built with Vite for the EkaAI platform. The p
 
 ## Code Style & Structure
 
+### Component Organization
+- **Single Responsibility**: Each component should have one clear purpose
+- **Composition**: Build complex UI through component composition
+- **Reusability**: Use the established UI component library
+- **Consistency**: Follow established patterns for similar components
+
+### File Naming Conventions
+- **Components**: PascalCase (e.g., `StudentDashboard.tsx`)
+- **Hooks**: camelCase with "use" prefix (e.g., `useForm.ts`)
+- **Utils**: camelCase (e.g., `formValidation.ts`)
+- **Constants**: camelCase with descriptive names (e.g., `index.ts`)
+- **Refactored Files**: Add "Refactored" suffix to maintain both versions
+
+### Import Organization
+```typescript
+// 1. React and external libraries
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+// 2. Internal hooks and utilities
+import { useForm } from '../hooks/useForm';
+import { validateForm } from '../utils/formValidation';
+
+// 3. UI components
+import { Button, Input, Card } from '../components/ui';
+
+// 4. Constants and types
+import { SUBJECT_OPTIONS } from '../constants';
+import type { FormData } from '../types/forms';
+```
+
 ### TypeScript Best Practices
 - **Strong Typing**: Use explicit types, avoid `any`
 - **Interface Definitions**: Define clear contracts for all data structures
 - **Generic Types**: Use generics for reusable component patterns
 - **Const Assertions**: Prefer `const` assertions for type safety
-- **Strict Mode**: Enable all TypeScript strict mode features
+- **Type Imports**: Use `import type` for type-only imports
+- **Readonly Arrays**: Use `ReadonlyArray` for immutable data
 
 ### React Best Practices
 - **Functional Components**: Use functional components with hooks exclusively
 - **Custom Hooks**: Extract complex logic into reusable custom hooks
 - **Component Composition**: Build complex UI through component composition
 - **Props Validation**: Use TypeScript interfaces for prop validation
-- **State Management**: Use React hooks for local state, context for shared state
+- **State Management**: Use custom hooks for complex state, context for global state
+- **UI Components**: Always use the established UI component library
+- **Layout Components**: Use common layout patterns for consistency
 
-### Component Architecture
+### Component Architecture Patterns
 ```typescript
-// Example component structure
+// Standard Component Structure
 interface ComponentProps {
-  // Clear prop interface
+  // Clear prop interface with proper typing
 }
 
 const Component: React.FC<ComponentProps> = ({ ...props }) => {
-  // State management
-  // Effects and lifecycle
-  // Event handlers
-  // Render logic
+  // 1. Custom hooks for state and logic
+  const { formData, handleChange } = useForm({...});
+  const { isLoading } = useLoading();
+  
+  // 2. Event handlers and effects
+  useEffect(() => { /* side effects */ }, []);
+  
+  // 3. Render with UI components
+  return (
+    <Card>
+      <Input {...inputProps} />
+      <Button loading={isLoading}>Submit</Button>
+    </Card>
+  );
 };
 
 export default Component;
 ```
 
-### Service Layer Pattern
+### Custom Hook Patterns
 ```typescript
-// Example service class
-class APIService {
-  private baseURL: string;
+// Hook for complex state logic
+const useFeatureState = (initialState) => {
+  const [state, setState] = useState(initialState);
   
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-  }
+  // Complex logic encapsulated in hook
+  const updateState = useCallback((newData) => {
+    // State update logic
+  }, []);
   
-  async methodName<T>(data: InputType): Promise<ResponseType<T>> {
-    // Implementation
-  }
-}
+  return { state, updateState };
+};
+
+// Hook for API interactions
+const useApiData = () => {
+  const { executeAsync, isLoading } = useLoading();
+  
+  const fetchData = useCallback(async () => {
+    return executeAsync(() => api.getData());
+  }, [executeAsync]);
+  
+  return { fetchData, isLoading };
+};
+```
+
+## UI Component System
+
+### Available Components
+The project includes a comprehensive UI component library. Always use these components instead of creating custom styled elements:
+
+#### Form Components
+- `<Button>` - Primary, secondary, outline, and ghost variants
+- `<Input>` - Text inputs with label, error, and helper text support
+- `<Select>` - Dropdown selects with option arrays
+- `<Textarea>` - Multi-line text inputs
+- `<CheckboxGroup>` - Multi-select checkbox groups
+- `<RadioGroup>` - Single-select radio button groups
+
+#### Layout Components
+- `<Card>` - Content containers with consistent styling
+- `<PageHeader>` - Page titles with optional back buttons
+- `<Modal>` - Overlay dialogs with size variants
+- `<AuthLayout>` - Layout for authentication pages
+- `<DashboardLayout>` - Layout for dashboard pages
+- `<PageLayout>` - General page container with responsive widths
+
+#### Feedback Components
+- `<LoadingSpinner>` - Loading indicators in multiple sizes
+- `<Notification>` - Toast notifications for success/error/warning/info
+- `<FeatureCard>` - Feature showcase cards with icons and links
+
+### Usage Guidelines
+```typescript
+// Correct: Use UI components with proper props
+<Button variant="primary" size="lg" loading={isSubmitting}>
+  Submit Form
+</Button>
+
+<Input 
+  label="Email Address" 
+  type="email" 
+  error={errors.email}
+  helperText="We'll never share your email"
+/>
+
+<CheckboxGroup
+  label="Select subjects"
+  options={SUBJECT_OPTIONS}
+  value={selectedSubjects}
+  onChange={setSelectedSubjects}
+  columns={3}
+/>
+
+// Incorrect: Custom styling for common elements
+<button className="bg-primary-accent text-primary-bg px-8 py-4...">
+  Submit
+</button>
+```
+
+### Constants Usage
+Always use centralized constants for options and static data:
+
+```typescript
+import {
+  SUBJECT_OPTIONS,
+  GRADE_OPTIONS,
+  LEARNING_GOAL_OPTIONS,
+  DAILY_STUDY_TIME_OPTIONS,
+  EXPLANATION_STYLE_OPTIONS
+} from '../constants';
+
+// Use in components
+<Select options={GRADE_OPTIONS} />
+<CheckboxGroup options={SUBJECT_OPTIONS} />
 ```
 
 ### Error Handling Standards
