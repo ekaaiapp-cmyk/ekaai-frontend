@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
-import type { AuthContextType, AuthUser, UserProfile } from '../types/auth';
+import type { AuthUser, UserProfile } from '../types/auth';
+
+interface AuthContextType {
+  user: AuthUser | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -20,91 +21,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session with timeout
-    const getInitialSession = async () => {
-      console.log('🔄 AuthContext: Initializing authentication...');
-      try {
-        console.log('📞 AuthContext: Calling supabase.auth.getSession()...');
-        
-        // Create a promise with timeout
-        const sessionPromise = Promise.race([
-          supabase.auth.getSession(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), 5000)
-          )
-        ]);
-        
-        const { data: { session }, error } = await sessionPromise as any;
-        console.log('📊 AuthContext: Session response received:', { 
-          hasSession: !!session, 
-          hasUser: !!session?.user,
-          error: error?.message 
-        });
-        
-        if (error) {
-          console.error('❌ AuthContext: Session error:', error);
-          // Don't throw here, just continue without session
-        }
-        
-        if (session?.user) {
-          console.log('✅ AuthContext: User found in session:', session.user.email);
-          setUser(session.user as AuthUser);
-          console.log('👤 AuthContext: About to fetch user profile...');
-          await fetchUserProfile(session.user.id);
-        } else {
-          console.log('👤 AuthContext: No user session found');
-          setUser(null);
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error('❌ AuthContext: Error getting initial session:', error);
-        // Ensure we clear any stale state
-        setUser(null);
-        setProfile(null);
-      } finally {
-        console.log('✅ AuthContext: Initialization complete, setting loading to false');
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 AuthContext: Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
-        
-        if (session?.user) {
-          console.log('✅ AuthContext: User signed in via auth change:', session.user.email);
-          setUser(session.user as AuthUser);
-          await fetchUserProfile(session.user.id);
-        } else {
-          console.log('👤 AuthContext: User signed out via auth change');
-          setUser(null);
-          setProfile(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('👤 AuthContext: Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.log('👤 AuthContext: Profile fetch result:', { data: !!data, error: error?.message, code: error?.code });
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ AuthContext: Profile fetch error:', error);
         throw error;
       }
 
       if (data) {
+        console.log('✅ AuthContext: Profile found, setting profile');
         setProfile({
           id: data.id,
           fullName: data.full_name,
@@ -124,13 +60,145 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: new Date(data.updated_at)
         });
       } else {
+        console.log('👤 AuthContext: No profile data found, setting profile to null');
         setProfile(null);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ AuthContext: Error fetching user profile:', error);
       setProfile(null);
     }
   };
+
+  useEffect(() => {
+    console.log('🔄 AuthContext: Initializing authentication...');
+    
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      console.log('🚨 AuthContext: Emergency timeout - forcing loading to false');
+      setLoading(false);
+    }, 1000); // 1 second emergency timeout - much shorter for testing
+    
+    const getInitialSession = async () => {
+      try {
+        console.log('📞 AuthContext: Calling supabase.auth.getSession()...');
+        console.log('🔧 AuthContext: Supabase client exists:', !!supabase);
+        
+        // Add a race condition with timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session request timeout')), 8000) // Increased to 8 seconds
+        );
+        
+        console.log('📍 AuthContext: Starting session request with timeout...');
+        const result = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]);
+        
+        // Handle timeout case explicitly
+        if (!result) {
+          throw new Error('Session request returned null');
+        }
+        
+        const { data: { session }, error } = result as any;
+        
+        console.log('📍 AuthContext: Session request completed');
+        
+        console.log('📊 AuthContext: Session result:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          error: error?.message
+        });
+        
+        if (error) {
+          console.error('❌ AuthContext: Session error:', error);
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+        
+        if (session?.user) {
+          console.log('✅ AuthContext: User found:', session.user.email);
+          setUser(session.user as AuthUser);
+          try {
+            await fetchUserProfile(session.user.id);
+          } catch (profileError) {
+            console.error('❌ AuthContext: Profile fetch error:', profileError);
+          }
+        } else {
+          console.log('👤 AuthContext: No user session found');
+          setUser(null);
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('❌ AuthContext: Error getting initial session:', error);
+        // If it's a timeout or connection error, continue without auth
+        setUser(null);
+        setProfile(null);
+      } finally {
+        console.log('✅ AuthContext: Initialization complete, setting loading to false');
+        clearTimeout(emergencyTimeout);
+        setLoading(false);
+        setAuthInitialized(true);
+      }
+    };
+
+    getInitialSession();
+
+    // Fallback timeout to ensure loading doesn't get stuck
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ AuthContext: Timeout fallback - forcing loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 AuthContext: Auth state change:', { 
+          event, 
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          authInitialized 
+        });
+        
+        // Skip auth state changes until initial session is loaded
+        if (!authInitialized) {
+          console.log('🔄 AuthContext: Skipping auth state change - not initialized yet');
+          return;
+        }
+        
+        clearTimeout(timeoutId); // Clear timeout if auth change occurs
+        
+        // Prevent clearing user if we already have one and this is just a token refresh
+        if (event === 'TOKEN_REFRESHED' && user && session?.user) {
+          console.log('🔄 AuthContext: Token refreshed, keeping existing user');
+          return;
+        }
+        
+        if (session?.user) {
+          console.log('✅ AuthContext: Setting user from auth state change');
+          setUser(session.user as AuthUser);
+          try {
+            await fetchUserProfile(session.user.id);
+          } catch (profileError) {
+            console.error('❌ AuthContext: Profile fetch error:', profileError);
+            // Don't clear the user just because profile fetch failed
+          }
+        } else if (event === 'SIGNED_OUT' || !session) {
+          console.log('👤 AuthContext: User signed out or no session');
+          setUser(null);
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+      clearTimeout(emergencyTimeout);
+    };
+  }, []);
 
   const signInWithGoogle = async () => {
     try {
@@ -138,7 +206,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
@@ -146,7 +218,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw error;
       }
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      console.error('❌ AuthContext: Google sign-in error:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -155,100 +227,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      console.log('🔓 AuthContext: Starting sign out process...');
       setLoading(true);
-      
-      // Clear local state first
-      setUser(null);
-      setProfile(null);
-      
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
-        console.error('❌ AuthContext: Sign out error:', error);
         throw error;
       }
       
-      console.log('✅ AuthContext: Sign out successful');
-    } catch (error) {
-      console.error('❌ AuthContext: Error signing out:', error);
-      // Even if Supabase fails, clear local state
       setUser(null);
       setProfile(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const updateProfile = async (profileData: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {
-      throw new Error('No authenticated user');
+      throw new Error('No user logged in');
     }
 
     try {
       setLoading(true);
-      const now = new Date().toISOString();
       
-      const updateData = {
-        id: user.id,
-        full_name: profileData.fullName,
-        email: profileData.email,
-        preferred_language: profileData.preferredLanguage,
-        current_grade: profileData.currentGrade,
-        subjects: profileData.subjects,
-        is_preparing_for_exam: profileData.isPreparingForExam,
-        exam_name: profileData.examName,
-        learning_goals: profileData.learningGoals,
-        daily_study_time: profileData.dailyStudyTime,
-        preferred_explanation_style: profileData.preferredExplanationStyle,
-        learning_challenge: profileData.learningChallenge,
-        starting_topic: profileData.startingTopic,
-        youtube_link: profileData.youtubeLink,
-        updated_at: now
+      const dbUpdates = {
+        full_name: updates.fullName,
+        email: updates.email,
+        preferred_language: updates.preferredLanguage,
+        current_grade: updates.currentGrade,
+        subjects: updates.subjects,
+        is_preparing_for_exam: updates.isPreparingForExam,
+        exam_name: updates.examName,
+        learning_goals: updates.learningGoals,
+        daily_study_time: updates.dailyStudyTime,
+        preferred_explanation_style: updates.preferredExplanationStyle,
+        learning_challenge: updates.learningChallenge,
+        starting_topic: updates.startingTopic,
+        youtube_link: updates.youtubeLink,
+        updated_at: new Date().toISOString()
       };
 
-      // Remove undefined values
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key as keyof typeof updateData] === undefined) {
-          delete updateData[key as keyof typeof updateData];
+      Object.keys(dbUpdates).forEach(key => {
+        if (dbUpdates[key as keyof typeof dbUpdates] === undefined) {
+          delete dbUpdates[key as keyof typeof dbUpdates];
         }
       });
 
-      // 1. Update Supabase profile (fast, for UI updates)
       const { error } = await supabase
         .from('profiles')
-        .upsert(updateData);
+        .update(dbUpdates)
+        .eq('id', user.id);
 
       if (error) {
         throw error;
       }
 
-      // 2. Send to AI backend for personalization (async, non-blocking)
-      try {
-        const aiBackendUrl = import.meta.env.VITE_API_BASE_URL;
-        if (aiBackendUrl) {
-          // Send profile data to AI backend for processing
-          await fetch(`${aiBackendUrl}/api/user/onboarding`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${user.id}` // or proper JWT token
-            },
-            body: JSON.stringify({
-              userId: user.id,
-              profileData: profileData,
-              timestamp: now
-            })
-          });
-        }
-      } catch (aiError) {
-        // Don't fail the profile update if AI backend is down
-        console.warn('AI backend update failed:', aiError);
+      if (profile) {
+        setProfile({
+          ...profile,
+          ...updates,
+          updatedAt: new Date()
+        });
       }
-
-      // 3. Refetch profile to update local state
-      await fetchUserProfile(user.id);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -257,51 +299,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const deleteAccount = async () => {
-    if (!user) {
-      throw new Error('No authenticated user');
-    }
-
-    try {
-      setLoading(true);
-      
-      // First delete the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id);
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      // Then delete the auth user (requires admin privileges or RLS policies)
-      // Note: In production, this should be done via a backend function
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (authError) {
-        console.warn('Could not delete auth user:', authError);
-        // Still proceed with sign out
-      }
-
-      // Sign out
-      await signOut();
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const value: AuthContextType = {
+  const value = {
     user,
     profile,
     loading,
     signInWithGoogle,
     signOut,
-    updateProfile,
-    deleteAccount
+    updateProfile
   };
 
   return (
@@ -309,4 +313,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
