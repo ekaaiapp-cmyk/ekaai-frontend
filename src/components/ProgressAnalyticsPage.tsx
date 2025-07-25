@@ -19,7 +19,7 @@ const ProgressAnalyticsPage: React.FC = () => {
   const loadAnalytics = async () => {
     try {
       const analyticsData = await executeAsync(() => 
-        studentAPI.getProgressAnalytics('user-123', timeRange)
+        studentAPI.getAnalytics(timeRange)
       );
       if (analyticsData) {
         setAnalytics(analyticsData);

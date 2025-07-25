@@ -23,7 +23,7 @@ const ContentLibraryPage: React.FC = () => {
 
   const loadContent = async () => {
     try {
-      const contentData = await executeAsync(() => studentAPI.getContentLibrary('user-123'));
+      const contentData = await executeAsync(() => studentAPI.getContentLibrary());
       if (contentData) {
         setContent(contentData);
       }

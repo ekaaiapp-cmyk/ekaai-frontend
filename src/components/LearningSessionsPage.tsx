@@ -40,7 +40,7 @@ const LearningSessionsPage: React.FC = () => {
       console.error('Failed to load sessions:', error);
       // Fallback to recommended sessions if getAllSessions doesn't exist
       try {
-        const recommendedSessions = await studentAPI.getRecommendedSessions('user-123');
+        const recommendedSessions = await studentAPI.getRecommendedSessions();
         setSessions(recommendedSessions);
       } catch (fallbackError) {
         console.error('Failed to load recommended sessions:', fallbackError);

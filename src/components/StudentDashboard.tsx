@@ -38,8 +38,8 @@ const StudentDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       const [sessions, analyticsData] = await Promise.all([
-        studentAPI.getRecommendedSessions('user-123'),
-        studentAPI.getProgressAnalytics('user-123', '7d')
+        studentAPI.getRecommendedSessions(),
+        studentAPI.getAnalytics('7d')
       ]);
       
       setRecommendedSessions(sessions.slice(0, 3)); // Show top 3
@@ -62,7 +62,7 @@ const StudentDashboard: React.FC = () => {
 
   const handleStartDoubtClearing = async () => {
     try {
-      const chatSession = await aiTutoringAPI.createChatSession('user-123');
+      const chatSession = await aiTutoringAPI.createChatSession();
       navigate(`/doubt-clearing/${chatSession.id}`);
     } catch (error) {
       console.error('Failed to start doubt clearing:', error);

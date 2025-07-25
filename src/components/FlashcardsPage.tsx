@@ -28,7 +28,7 @@ const FlashcardsPage: React.FC = () => {
 
   const loadDecks = async () => {
     try {
-      const decksData = await executeAsync(() => studentAPI.getFlashcardDecks('user-123'));
+      const decksData = await executeAsync(() => studentAPI.getFlashcardDecks());
       if (decksData) {
         setDecks(decksData);
       }
@@ -42,7 +42,7 @@ const FlashcardsPage: React.FC = () => {
     
     try {
       const [decksData, cardsData] = await Promise.all([
-        executeAsync(() => studentAPI.getFlashcardDecks('user-123')),
+        executeAsync(() => studentAPI.getFlashcardDecks()),
         executeAsync(() => studentAPI.getDeckCards(deckId))
       ]);
       

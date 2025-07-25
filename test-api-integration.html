@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EkaAI API Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #f5f5f5;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+        }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+        .warning { color: #fbbf24; }
+        button {
+            background-color: #ffd700;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #ffc107;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 EkaAI API Integration Test</h1>
+    <p>This page tests the integration between the EkaAI frontend and backend.</p>
+
+    <div class="test-section">
+        <h3>1. Backend Connection Test</h3>
+        <button onclick="testBackendConnection()">Test Connection</button>
+        <div id="connection-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Waitlist API Test</h3>
+        <button onclick="testWaitlistAPI()">Test Student Registration</button>
+        <div id="waitlist-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Authentication Endpoints Test</h3>
+        <button onclick="testAuthEndpoints()">Test Auth Structure</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Protected Endpoints Test</h3>
+        <button onclick="testProtectedEndpoints()">Test Protected Routes</button>
+        <div id="protected-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        async function testBackendConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = 'Testing backend connection...';
+
+            try {
+                // Test root endpoint
+                const response = await fetch(`${API_BASE_URL}/`);
+                const data = await response.json();
+                
+                // Test health endpoint
+                const healthResponse = await fetch(`${API_BASE_URL}/api/health`);
+                const healthData = await healthResponse.json();
+
+                resultDiv.innerHTML = `
+✅ Backend Connection: SUCCESS
+📝 Root Response: ${data.message}
+🏥 Health Status: ${healthData.status}
+🔗 API Base URL: ${API_BASE_URL}
+                `;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Backend Connection: FAILED\n📝 Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testWaitlistAPI() {
+            const resultDiv = document.getElementById('waitlist-result');
+            resultDiv.innerHTML = 'Testing waitlist API...';
+
+            try {
+                const testData = {
+                    name: 'Test Student',
+                    email: 'test@example.com',
+                    phone: '+1234567890',
+                    date_of_birth: '2000-01-01',
+                    grade_level: '12',
+                    school: 'Test High School',
+                    subjects: ['Mathematics', 'Physics'],
+                    goals: 'Integration testing',
+                    ai_experience: 'Beginner'
+                };
+
+                const response = await fetch(`${API_BASE_URL}/api/waitlist/student`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+                
+                resultDiv.innerHTML = `
+✅ Waitlist API: ${result.success ? 'SUCCESS' : 'FAILED'}
+📝 Response: ${JSON.stringify(result, null, 2)}
+                `;
+                resultDiv.className = result.success ? 'result success' : 'result error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Waitlist API: FAILED\n📝 Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testAuthEndpoints() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = 'Testing authentication endpoints...';
+
+            try {
+                // Test Google OAuth endpoint (should fail with invalid token)
+                const authResponse = await fetch(`${API_BASE_URL}/auth/google`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ credential: 'test_invalid_token' })
+                });
+
+                const authResult = await authResponse.json();
+
+                // Test profile endpoint without auth (should fail)
+                const profileResponse = await fetch(`${API_BASE_URL}/auth/profile`);
+                const profileResult = await profileResponse.json();
+
+                resultDiv.innerHTML = `
+✅ Auth Endpoints: PROPERLY CONFIGURED
+📝 Google OAuth: ${authResult.detail.includes('Invalid Google token') ? '✅ Validates tokens' : '❌ Not validating'}
+📝 Profile Protection: ${profileResult.detail === 'Not authenticated' ? '✅ Protected' : '❌ Not protected'}
+                `;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Auth Endpoints: ERROR\n📝 Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testProtectedEndpoints() {
+            const resultDiv = document.getElementById('protected-result');
+            resultDiv.innerHTML = 'Testing protected endpoints...';
+
+            const protectedEndpoints = [
+                { method: 'GET', url: '/student/profile', name: 'Student Profile' },
+                { method: 'GET', url: '/student/sessions/recommended', name: 'Recommended Sessions' },
+                { method: 'POST', url: '/ai/chat/sessions', name: 'AI Chat Sessions' },
+                { method: 'GET', url: '/student/analytics', name: 'Student Analytics' },
+                { method: 'GET', url: '/student/flashcards/decks', name: 'Flashcard Decks' }
+            ];
+
+            let results = [];
+
+            for (const endpoint of protectedEndpoints) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint.url}`, {
+                        method: endpoint.method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: endpoint.method === 'POST' ? JSON.stringify({}) : undefined
+                    });
+
+                    const result = await response.json();
+                    const isProtected = result.detail === 'Not authenticated';
+                    
+                    results.push(`${isProtected ? '✅' : '❌'} ${endpoint.name}: ${isProtected ? 'Protected' : 'Not Protected'}`);
+                } catch (error) {
+                    results.push(`❌ ${endpoint.name}: Error - ${error.message}`);
+                }
+            }
+
+            resultDiv.innerHTML = `
+Protected Endpoints Test Results:
+${results.join('\n')}
+
+${results.every(r => r.startsWith('✅')) ? '✅ All endpoints are properly protected!' : '⚠️ Some endpoints may not be properly protected'}
+            `;
+            resultDiv.className = 'result success';
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            testBackendConnection();
+        };
+    </script>
+</body>
+</html>

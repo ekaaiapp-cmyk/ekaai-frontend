@@ -50,7 +50,7 @@ const DoubtClearingPage: React.FC = () => {
         setMessages(currentSession.messages);
       } else {
         // Create new session
-        currentSession = await aiTutoringAPI.createChatSession('user-123');
+        currentSession = await aiTutoringAPI.createChatSession();
         navigate(`/doubt-clearing/${currentSession.id}`, { replace: true });
       }
       
@@ -65,7 +65,7 @@ const DoubtClearingPage: React.FC = () => {
 
   const loadChatHistory = async () => {
     try {
-      const userSessions = await aiTutoringAPI.getUserChatSessions('user-123');
+      const userSessions = await aiTutoringAPI.getUserChatSessions();
       setChatHistory(userSessions);
     } catch (error) {
       console.error('Failed to load chat history:', error);

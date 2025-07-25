@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const SettingsPage: React.FC = () => {
-  const { user, profile, updateProfile, signOut, deleteAccount, loading } = useAuth();
+  const { user, profile, updateProfile, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'account' | 'profile'>('account');
   const [isEditing, setIsEditing] = useState(false);
@@ -35,11 +35,14 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // TODO: Implement deleteAccount method in AuthContext
   const handleDeleteAccount = async () => {
     try {
       setIsDeleting(true);
-      await deleteAccount();
-      navigate('/');
+      // await deleteAccount(); // Method not yet implemented in AuthContext
+      console.log('Account deletion not yet implemented');
+      alert('Account deletion feature is not yet implemented. Please contact support.');
+      setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Error deleting account:', error);
       setShowDeleteConfirm(false);

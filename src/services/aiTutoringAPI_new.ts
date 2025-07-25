@@ -218,6 +218,11 @@ class AITutoringService {
     }
   }
 
+  // Utility methods
+  private generateSessionTitle(question: string): string {
+    const words = question.split(' ').slice(0, 5);
+    return words.join(' ') + (question.split(' ').length > 5 ? '...' : '');
+  }
 }
 
 export const aiTutoringAPI = new AITutoringService();

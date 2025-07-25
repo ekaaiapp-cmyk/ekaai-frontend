@@ -99,7 +99,6 @@ const LearningSessionPage: React.FC<LearningSessionPageProps> = ({ sessionId: pr
   const handleOpenDoubtClearing = async () => {
     try {
       const chatSession = await aiTutoringAPI.createChatSession(
-        'user-123', // This would come from auth context
         'I need help with this lesson'
       );
       // Navigate to doubt clearing with context

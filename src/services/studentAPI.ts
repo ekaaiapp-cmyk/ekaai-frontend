@@ -2,6 +2,10 @@
 // This service handles all student-related API calls including learning sessions,
 // progress tracking, flashcards, and content management
 
+import { authAPI } from './authAPI';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 export interface StudentProfile {
   id: string;
   name: string;
@@ -137,411 +141,127 @@ export interface ContentItem {
   processingStatus?: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
-// Dummy API implementation for development
+// Real API implementation for production
 class StudentAPIService {
-  // private baseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+  private getAuthHeaders(): HeadersInit {
+    const token = authAPI.getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
 
-  // Student Profile Management
-  async getProfile(userId: string): Promise<StudentProfile> {
-    // Dummy implementation
-    console.log('API Call: GET /student/profile', { userId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: userId,
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          grade: '12',
-          subjects: ['Mathematics', 'Physics', 'Chemistry'],
-          learningGoals: ['Improve problem-solving', 'Prepare for exams'],
-          studyTimePreference: '1-2 hours',
-          explanationStyle: 'visual',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-15T10:30:00Z'
-        });
-      }, 500);
-    });
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
   }
 
-  async updateProfile(userId: string, updates: Partial<StudentProfile>): Promise<StudentProfile> {
-    console.log('API Call: PUT /student/profile', { userId, updates });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: userId,
-          name: updates.name || 'John Doe',
-          email: 'john.doe@example.com',
-          grade: updates.grade || '12',
-          subjects: updates.subjects || ['Mathematics', 'Physics'],
-          learningGoals: updates.learningGoals || ['Improve problem-solving'],
-          studyTimePreference: updates.studyTimePreference || '1-2 hours',
-          explanationStyle: updates.explanationStyle || 'visual',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: new Date().toISOString()
-        });
-      }, 500);
-    });
+  private async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ 
+        success: false, 
+        error: { 
+          code: 'NETWORK_ERROR', 
+          message: `HTTP ${response.status}: ${response.statusText}` 
+        } 
+      }));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error?.message || 'API request failed');
+    }
+
+    return result.data;
+  }
+
+  // Student Profile Management
+  async getProfile(): Promise<StudentProfile> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/profile`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<StudentProfile>(response);
+    } catch (error) {
+      console.error('Get student profile failed:', error);
+      throw error;
+    }
+  }
+
+  async updateProfile(updates: Partial<StudentProfile>): Promise<StudentProfile> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/profile`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(updates),
+      });
+
+      return this.handleResponse<StudentProfile>(response);
+    } catch (error) {
+      console.error('Update student profile failed:', error);
+      throw error;
+    }
   }
 
   // Learning Sessions
-  async getRecommendedSessions(userId: string): Promise<LearningSession[]> {
-    console.log('API Call: GET /student/sessions/recommended', { userId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'session-1',
-            title: 'Quadratic Equations Fundamentals',
-            subject: 'Mathematics',
-            topic: 'Algebra',
-            difficulty: 'intermediate',
-            estimatedDuration: 45,
-            content: [
-              {
-                id: 'content-1',
-                type: 'text',
-                title: 'Introduction to Quadratic Equations',
-                content: 'A quadratic equation is a polynomial equation of degree 2...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q1',
-                type: 'multiple-choice',
-                question: 'What is the standard form of a quadratic equation?',
-                options: ['ax² + bx + c = 0', 'ax + b = 0', 'ax³ + bx² + cx + d = 0'],
-                correctAnswer: 'ax² + bx + c = 0',
-                explanation: 'The standard form shows the degree 2 polynomial structure.',
-                difficulty: 'easy'
-              }
-            ],
-            progress: {
-              sessionId: 'session-1',
-              currentSection: 0,
-              totalSections: 3,
-              completedQuestions: 0,
-              totalQuestions: 5,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          }
-        ]);
-      }, 800);
-    });
+  async getRecommendedSessions(): Promise<LearningSession[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/sessions/recommended`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<LearningSession[]>(response);
+    } catch (error) {
+      console.error('Get recommended sessions failed:', error);
+      throw error;
+    }
   }
 
   async getAllSessions(): Promise<LearningSession[]> {
-    console.log('API Call: GET /student/sessions/all');
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'session-1',
-            title: 'Quadratic Equations Fundamentals',
-            subject: 'Mathematics',
-            topic: 'Algebra',
-            difficulty: 'intermediate',
-            estimatedDuration: 45,
-            content: [
-              {
-                id: 'content-1',
-                type: 'text',
-                title: 'Introduction to Quadratic Equations',
-                content: 'A quadratic equation is a polynomial equation of degree 2...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q1',
-                type: 'multiple-choice',
-                question: 'What is the standard form of a quadratic equation?',
-                options: ['ax² + bx + c = 0', 'ax + b = 0', 'ax³ + bx² + cx + d = 0'],
-                correctAnswer: 'ax² + bx + c = 0',
-                explanation: 'The standard form shows the degree 2 polynomial structure.',
-                difficulty: 'easy'
-              }
-            ],
-            progress: {
-              sessionId: 'session-1',
-              currentSection: 0,
-              totalSections: 3,
-              completedQuestions: 0,
-              totalQuestions: 5,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          },
-          {
-            id: 'session-2',
-            title: 'Photosynthesis Deep Dive',
-            subject: 'Biology',
-            topic: 'Plant Biology',
-            difficulty: 'beginner',
-            estimatedDuration: 30,
-            content: [
-              {
-                id: 'content-2',
-                type: 'text',
-                title: 'Understanding Photosynthesis',
-                content: 'Photosynthesis is the process by which plants convert light energy...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q2',
-                type: 'multiple-choice',
-                question: 'What is the main product of photosynthesis?',
-                options: ['Oxygen', 'Carbon Dioxide', 'Water'],
-                correctAnswer: 'Oxygen',
-                explanation: 'Photosynthesis produces oxygen as a byproduct.',
-                difficulty: 'easy'
-              }
-            ],
-            progress: {
-              sessionId: 'session-2',
-              currentSection: 0,
-              totalSections: 2,
-              completedQuestions: 0,
-              totalQuestions: 3,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          },
-          {
-            id: 'session-3',
-            title: 'Newton\'s Laws of Motion',
-            subject: 'Physics',
-            topic: 'Mechanics',
-            difficulty: 'intermediate',
-            estimatedDuration: 50,
-            content: [
-              {
-                id: 'content-3',
-                type: 'text',
-                title: 'Introduction to Newton\'s Laws',
-                content: 'Sir Isaac Newton formulated three fundamental laws...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q3',
-                type: 'multiple-choice',
-                question: 'What is Newton\'s first law also known as?',
-                options: ['Law of Inertia', 'Law of Acceleration', 'Law of Action-Reaction'],
-                correctAnswer: 'Law of Inertia',
-                explanation: 'Newton\'s first law is commonly called the Law of Inertia.',
-                difficulty: 'medium'
-              }
-            ],
-            progress: {
-              sessionId: 'session-3',
-              currentSection: 0,
-              totalSections: 4,
-              completedQuestions: 0,
-              totalQuestions: 8,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          },
-          {
-            id: 'session-4',
-            title: 'Advanced Calculus: Integration Techniques',
-            subject: 'Mathematics',
-            topic: 'Calculus',
-            difficulty: 'advanced',
-            estimatedDuration: 60,
-            content: [
-              {
-                id: 'content-4',
-                type: 'text',
-                title: 'Integration by Parts',
-                content: 'Integration by parts is a technique for evaluating integrals...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q4',
-                type: 'short-answer',
-                question: 'State the formula for integration by parts.',
-                correctAnswer: '∫u dv = uv - ∫v du',
-                explanation: 'This is the fundamental formula for integration by parts.',
-                difficulty: 'hard'
-              }
-            ],
-            progress: {
-              sessionId: 'session-4',
-              currentSection: 0,
-              totalSections: 5,
-              completedQuestions: 0,
-              totalQuestions: 10,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          },
-          {
-            id: 'session-5',
-            title: 'World War II: Causes and Consequences',
-            subject: 'History',
-            topic: 'Modern History',
-            difficulty: 'intermediate',
-            estimatedDuration: 40,
-            content: [
-              {
-                id: 'content-5',
-                type: 'text',
-                title: 'The Road to War',
-                content: 'The causes of World War II were complex and multifaceted...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q5',
-                type: 'essay',
-                question: 'Discuss the main causes that led to World War II.',
-                explanation: 'Consider political, economic, and social factors.',
-                difficulty: 'medium'
-              }
-            ],
-            progress: {
-              sessionId: 'session-5',
-              currentSection: 0,
-              totalSections: 3,
-              completedQuestions: 0,
-              totalQuestions: 6,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          },
-          {
-            id: 'session-6',
-            title: 'Introduction to Programming with Python',
-            subject: 'Computer Science',
-            topic: 'Programming',
-            difficulty: 'beginner',
-            estimatedDuration: 35,
-            content: [
-              {
-                id: 'content-6',
-                type: 'text',
-                title: 'Python Basics',
-                content: 'Python is a high-level programming language...',
-                order: 1
-              }
-            ],
-            questions: [
-              {
-                id: 'q6',
-                type: 'multiple-choice',
-                question: 'Which symbol is used for comments in Python?',
-                options: ['#', '//', '/*'],
-                correctAnswer: '#',
-                explanation: 'Python uses the # symbol for single-line comments.',
-                difficulty: 'easy'
-              }
-            ],
-            progress: {
-              sessionId: 'session-6',
-              currentSection: 0,
-              totalSections: 4,
-              completedQuestions: 0,
-              totalQuestions: 7,
-              accuracy: 0,
-              timeSpent: 0,
-              status: 'not-started'
-            }
-          }
-        ]);
-      }, 1000);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/sessions/all`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<LearningSession[]>(response);
+    } catch (error) {
+      console.error('Get all sessions failed:', error);
+      throw error;
+    }
   }
 
   async getSession(sessionId: string): Promise<LearningSession> {
-    console.log('API Call: GET /student/sessions/:id', { sessionId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: sessionId,
-          title: 'Quadratic Equations Fundamentals',
-          subject: 'Mathematics',
-          topic: 'Algebra',
-          difficulty: 'intermediate',
-          estimatedDuration: 45,
-          content: [
-            {
-              id: 'content-1',
-              type: 'text',
-              title: 'Introduction to Quadratic Equations',
-              content: 'A quadratic equation is a polynomial equation of degree 2. The general form is ax² + bx + c = 0, where a, b, and c are constants and a ≠ 0.',
-              order: 1
-            },
-            {
-              id: 'content-2',
-              type: 'text',
-              title: 'Solving Methods',
-              content: 'There are several methods to solve quadratic equations: factoring, completing the square, and the quadratic formula.',
-              order: 2
-            }
-          ],
-          questions: [
-            {
-              id: 'q1',
-              type: 'multiple-choice',
-              question: 'What is the standard form of a quadratic equation?',
-              options: ['ax² + bx + c = 0', 'ax + b = 0', 'ax³ + bx² + cx + d = 0'],
-              correctAnswer: 'ax² + bx + c = 0',
-              explanation: 'The standard form shows the degree 2 polynomial structure.',
-              difficulty: 'easy'
-            }
-          ],
-          progress: {
-            sessionId,
-            currentSection: 0,
-            totalSections: 2,
-            completedQuestions: 0,
-            totalQuestions: 1,
-            accuracy: 0,
-            timeSpent: 0,
-            status: 'not-started'
-          }
-        });
-      }, 600);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/sessions/${sessionId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<LearningSession>(response);
+    } catch (error) {
+      console.error('Get session failed:', error);
+      throw error;
+    }
   }
 
   async updateSessionProgress(sessionId: string, progress: Partial<SessionProgress>): Promise<SessionProgress> {
-    console.log('API Call: PUT /student/sessions/:id/progress', { sessionId, progress });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          sessionId,
-          currentSection: progress.currentSection || 0,
-          totalSections: 2,
-          completedQuestions: progress.completedQuestions || 0,
-          totalQuestions: 1,
-          accuracy: progress.accuracy || 0,
-          timeSpent: progress.timeSpent || 0,
-          status: progress.status || 'in-progress'
-        });
-      }, 300);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/sessions/${sessionId}/progress`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(progress),
+      });
+
+      return this.handleResponse<SessionProgress>(response);
+    } catch (error) {
+      console.error('Update session progress failed:', error);
+      throw error;
+    }
   }
 
   async submitAnswer(sessionId: string, questionId: string, answer: string): Promise<{
@@ -549,223 +269,132 @@ class StudentAPIService {
     explanation: string;
     nextQuestionId?: string;
   }> {
-    console.log('API Call: POST /student/sessions/:id/answers', { sessionId, questionId, answer });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          correct: true,
-          explanation: 'Correct! The standard form ax² + bx + c = 0 is the most common way to represent quadratic equations.',
-          nextQuestionId: undefined
-        });
-      }, 500);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/sessions/${sessionId}/answers`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ questionId, answer }),
+      });
+
+      return this.handleResponse<{
+        correct: boolean;
+        explanation: string;
+        nextQuestionId?: string;
+      }>(response);
+    } catch (error) {
+      console.error('Submit answer failed:', error);
+      throw error;
+    }
   }
 
   // Progress Analytics
-  async getProgressAnalytics(userId: string, timeRange: '7d' | '30d' | '90d' | 'all' = '30d'): Promise<ProgressAnalytics> {
-    console.log('API Call: GET /student/analytics', { userId, timeRange });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          overallAccuracy: 85.5,
-          questionsAttempted: 247,
-          questionsMastered: 211,
-          subjectPerformance: [
-            {
-              subject: 'Mathematics',
-              accuracy: 88.2,
-              questionsAttempted: 145,
-              timeSpent: 320,
-              lastPracticed: '2024-01-15T10:30:00Z'
-            },
-            {
-              subject: 'Physics',
-              accuracy: 82.1,
-              questionsAttempted: 78,
-              timeSpent: 180,
-              lastPracticed: '2024-01-14T15:45:00Z'
-            }
-          ],
-          historicalTrends: [
-            { date: '2024-01-08', accuracy: 82.0, questionsAttempted: 15 },
-            { date: '2024-01-09', accuracy: 84.5, questionsAttempted: 18 },
-            { date: '2024-01-10', accuracy: 86.2, questionsAttempted: 22 }
-          ],
-          weakAreas: ['Trigonometric Identities', 'Complex Numbers'],
-          recommendations: [
-            {
-              id: 'rec-1',
-              type: 'practice',
-              title: 'Practice Trigonometric Identities',
-              description: 'Focus on sine, cosine, and tangent identities',
-              subject: 'Mathematics',
-              priority: 'high',
-              estimatedTime: 30,
-              actionUrl: '/sessions/trig-identities'
-            }
-          ],
-          achievements: [
-            {
-              id: 'ach-1',
-              title: '7-Day Streak',
-              description: 'Practiced for 7 consecutive days',
-              icon: '🔥',
-              earnedAt: '2024-01-15T09:00:00Z',
-              category: 'streak'
-            }
-          ]
-        });
-      }, 700);
-    });
-  }
+  async getAnalytics(timeRange: '7d' | '30d' | '90d' | 'all' = '30d'): Promise<ProgressAnalytics> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/analytics?timeRange=${timeRange}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
 
+      return this.handleResponse<ProgressAnalytics>(response);
+    } catch (error) {
+      console.error('Get analytics failed:', error);
+      throw error;
+    }
+  }
   // Flashcards
-  async getFlashcardDecks(userId: string): Promise<FlashcardDeck[]> {
-    console.log('API Call: GET /student/flashcards/decks', { userId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'deck-1',
-            title: 'Algebra Fundamentals',
-            description: 'Basic algebraic concepts and formulas',
-            subject: 'Mathematics',
-            cardCount: 25,
-            createdBy: 'ai',
-            lastReviewed: '2024-01-14T16:30:00Z',
-            masteryLevel: 78,
-            cards: []
-          },
-          {
-            id: 'deck-2',
-            title: 'Physics Formulas',
-            description: 'Essential physics formulas for mechanics',
-            subject: 'Physics',
-            cardCount: 18,
-            createdBy: 'user',
-            masteryLevel: 65,
-            cards: []
-          }
-        ]);
-      }, 500);
-    });
+  async getFlashcardDecks(): Promise<FlashcardDeck[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/flashcards/decks`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<FlashcardDeck[]>(response);
+    } catch (error) {
+      console.error('Get flashcard decks failed:', error);
+      throw error;
+    }
   }
 
   async getDeckCards(deckId: string): Promise<Flashcard[]> {
-    console.log('API Call: GET /student/flashcards/decks/:id/cards', { deckId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'card-1',
-            front: 'What is the quadratic formula?',
-            back: 'x = (-b ± √(b² - 4ac)) / 2a',
-            deckId,
-            difficulty: 'medium',
-            nextReview: '2024-01-16T12:00:00Z',
-            reviewCount: 3,
-            successRate: 0.8
-          }
-        ]);
-      }, 400);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/flashcards/decks/${deckId}/cards`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<Flashcard[]>(response);
+    } catch (error) {
+      console.error('Get deck cards failed:', error);
+      throw error;
+    }
   }
 
   async reviewCard(cardId: string, difficulty: 'easy' | 'medium' | 'hard'): Promise<Flashcard> {
-    console.log('API Call: POST /student/flashcards/cards/:id/review', { cardId, difficulty });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: cardId,
-          front: 'What is the quadratic formula?',
-          back: 'x = (-b ± √(b² - 4ac)) / 2a',
-          deckId: 'deck-1',
-          difficulty,
-          nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          reviewCount: 4,
-          successRate: 0.82
-        });
-      }, 300);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/flashcards/cards/${cardId}/review`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ difficulty }),
+      });
+
+      return this.handleResponse<Flashcard>(response);
+    } catch (error) {
+      console.error('Review card failed:', error);
+      throw error;
+    }
   }
 
   // Content Library
-  async getContentLibrary(userId: string): Promise<ContentItem[]> {
-    console.log('API Call: GET /student/content', { userId });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'content-1',
-            title: 'My Physics Notes - Chapter 1',
-            type: 'note',
-            subject: 'Physics',
-            content: 'Newton\'s laws of motion explain the relationship between forces and motion...',
-            tags: ['mechanics', 'newton', 'forces'],
-            createdAt: '2024-01-10T14:20:00Z',
-            updatedAt: '2024-01-12T09:15:00Z'
-          },
-          {
-            id: 'content-2',
-            title: 'Uploaded Math Worksheet',
-            type: 'upload',
-            subject: 'Mathematics',
-            content: 'AI-generated summary: This worksheet covers quadratic equations...',
-            fileUrl: '/uploads/math-worksheet.pdf',
-            tags: ['quadratic', 'algebra', 'practice'],
-            createdAt: '2024-01-14T11:30:00Z',
-            updatedAt: '2024-01-14T11:35:00Z',
-            processingStatus: 'completed'
-          }
-        ]);
-      }, 600);
-    });
+  async getContentLibrary(): Promise<ContentItem[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/content`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      return this.handleResponse<ContentItem[]>(response);
+    } catch (error) {
+      console.error('Get content library failed:', error);
+      throw error;
+    }
   }
 
   async uploadContent(file: File, subject: string): Promise<ContentItem> {
-    console.log('API Call: POST /student/content/upload', { fileName: file.name, subject });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: `content-${Date.now()}`,
-          title: file.name,
-          type: 'upload',
-          subject,
-          content: 'Processing...',
-          fileUrl: URL.createObjectURL(file),
-          tags: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          processingStatus: 'processing'
-        });
-      }, 1000);
-    });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('subject', subject);
+
+      const response = await fetch(`${API_BASE_URL}/student/content/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authAPI.getToken()}`,
+          // Don't set Content-Type for FormData, let browser set it with boundary
+        },
+        body: formData,
+      });
+
+      return this.handleResponse<ContentItem>(response);
+    } catch (error) {
+      console.error('Upload content failed:', error);
+      throw error;
+    }
   }
 
   async createNote(title: string, content: string, subject: string, tags: string[]): Promise<ContentItem> {
-    console.log('API Call: POST /student/content/notes', { title, subject, tags });
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: `note-${Date.now()}`,
-          title,
-          type: 'note',
-          subject,
-          content,
-          tags,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-      }, 500);
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/content/notes`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ title, content, subject, tags }),
+      });
+
+      return this.handleResponse<ContentItem>(response);
+    } catch (error) {
+      console.error('Create note failed:', error);
+      throw error;
+    }
   }
 }
 
